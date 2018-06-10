@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "start": "node ./src/server/main.js",
-    "dev": "nodemon ./src/server/main.js"
+    "dev": "node ./node_modules/nodemon/bin/nodemon.js ./src/server/main.js"
   },
   "dependencies": {
     "bluebird": "^3.5.0",

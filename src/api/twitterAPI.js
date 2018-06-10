@@ -1,22 +1,32 @@
 var Twitter = require('twitter');
 var Promise = require('bluebird');
 var querystring = require('querystring');    // parse query parameters
-require('dotenv').config();
 
-function twitterAPI(tokens,resolveName, id, args){
+function twitterAPI(context, resolveName, id, args){
 
-	const twitterToken = tokens.find((authorization) => {
-		return authorization.provider === 'twitter';
-	});
+	let authorization = context.headers.authorization ? JSON.parse(context.headers.authorization) : null;
+
+	return new Promise((resolve,reject) =>{
+
+	let unauthorized =  !authorization || !authorization.accessToken
+						|| !authorization.refreshToken ||  !authorization.clientId
+						|| !authorization.clientSecret;
+						
+	
+	if (unauthorized) {
+		reject(new Error('Unauthorized Request'));
+	}
 
 
 	var client = new Twitter({
-			consumer_key: '',
-			consumer_secret: '',
-			access_token_key: '',
-			access_token_secret:'' 
-		})
+			consumer_key: authorization.clientId,
+			consumer_secret: authorization.clientSecret,
+			access_token_key: authorization.accessToken,
+			access_token_secret: authorization.refreshToken
+	})
 	
+
+
 	return new Promise((resolve,reject) =>{
 		switch(resolveName){	
 			
@@ -117,7 +127,8 @@ function twitterAPI(tokens,resolveName, id, args){
 			default:
 				console.log('sorry we can\'t find matching resolve type:' + resolveName);
 				resolve(null);
-		}
+			}
+		});
 	});
 }
 
@@ -167,7 +178,6 @@ function WaterfallOver(max_pages,tweets, iterator, callback) {
     // instead of starting all the iterations, we only start the 1st one
     iterator(tweets, report);
 }
-
 
 
 module.exports = twitterAPI;

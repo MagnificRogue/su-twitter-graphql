@@ -3,21 +3,31 @@ const express = require('express');
 const graphqlHTTP = require('express-graphql');
 const twitterSchema = require('../schema');
 const logger = require('morgan');
-
+const bodyParser = require('body-parser');
 
 const app = express()
 
 app.use(cors());
 
 app.use(logger('dev'));
+app.use(/\/((?!graphql).)*/, bodyParser.urlencoded({ extended: true }));
+app.use(/\/((?!graphql).)*/, bodyParser.json());
+app.use(bodyParser.text({ type: 'application/graphql' }));
+
 
 // Redirect requests to /graphql to home
 app.all('/graphql', (req, res) => res.redirect('/'));
 
-app.use('/', graphqlHTTP((req) => ({
+app.get('/', graphqlHTTP((req) => ({
   schema: twitterSchema,
   graphiql: true
 })));
+
+app.post('/', graphqlHTTP((req) => ({
+  schema:  twitterSchema,
+  graphiql: false
+})));
+
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

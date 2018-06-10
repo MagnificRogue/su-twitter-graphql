@@ -90,7 +90,6 @@ const twitterQueryType = new GraphQLObjectType({
 								defaultValue:'en'
 							}
 			},
-			//resolve: (_,args) => searchTweet(args)
 			resolve: (_,args,context) => twitterAPI(context,resolveName = 'searchTweet', id='',args=args)
 		},
 		getTimeline:{
