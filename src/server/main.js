@@ -1,3 +1,4 @@
+require('dotenv').config();
 const cors = require('cors');
 const express = require('express');
 const graphqlHTTP = require('express-graphql');
@@ -5,10 +6,16 @@ const twitterSchema = require('../schema');
 const logger = require('morgan');
 const bodyParser = require('body-parser');
 
+
+if (!process.env.CLIENT_KEY || !process.env.CLIENT_SECRET) {
+	console.error('Error, Environment is missing a CLIENT_KEY and CLIENT_SECRET necessary to access the Twitter API');
+	process.exit(1);
+}
+
+
 const app = express()
 
 app.use(cors());
-
 app.use(logger('dev'));
 app.use(/\/((?!graphql).)*/, bodyParser.urlencoded({ extended: true }));
 app.use(/\/((?!graphql).)*/, bodyParser.json());

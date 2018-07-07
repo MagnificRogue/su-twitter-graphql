@@ -2,6 +2,8 @@ var Twitter = require('twitter');
 var Promise = require('bluebird');
 var querystring = require('querystring');    // parse query parameters
 
+
+
 function twitterAPI(context, resolveName, id, args){
 
 	let authorization = context.headers.authorization ? JSON.parse(context.headers.authorization) : null;
@@ -9,8 +11,7 @@ function twitterAPI(context, resolveName, id, args){
 	return new Promise((resolve,reject) =>{
 
 	let unauthorized =  !authorization || !authorization.accessToken
-						|| !authorization.refreshToken ||  !authorization.clientId
-						|| !authorization.clientSecret;
+						|| !authorization.refreshToken;
 						
 	
 	if (unauthorized) {
@@ -19,8 +20,8 @@ function twitterAPI(context, resolveName, id, args){
 
 
 	var client = new Twitter({
-			consumer_key: authorization.clientId,
-			consumer_secret: authorization.clientSecret,
+			consumer_key: process.env.CLIENT_KEY, 
+			consumer_secret: process.env.CLIENT_SECRET, 
 			access_token_key: authorization.accessToken,
 			access_token_secret: authorization.refreshToken
 	})
