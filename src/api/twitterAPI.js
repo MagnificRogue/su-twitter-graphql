@@ -27,109 +27,106 @@ function twitterAPI(context, resolveName, id, args){
 	})
 	
 
-
-	return new Promise((resolve,reject) =>{
-		switch(resolveName){	
+	switch(resolveName){	
+		
+		case 'searchUser':
+			args['page'] = args['pageNum'];
+			delete args['pageNum'];
+			client.get('users/search',args,function(error,tweets,response){
+				if(error){
+					console.log(error);
+					reject(JSON.stringify(error));
+				}
+				resolve(tweets);
+			});
+			break;
 			
-			case 'searchUser':
-				args['page'] = args['pageNum'];
-				delete args['pageNum'];
-				client.get('users/search',args,function(error,tweets,response){
-					if(error){
-						console.log(error);
-						reject(JSON.stringify(error));
-					}
-					resolve(tweets);
-				});
-				break;
+		case 'searchTweet':
+			var max_pages = args['pages']-1;
+			delete args['pages']; //pages is a made up field that doesn't belong to the original twitter api parameters
+			
+			client.get('search/tweets',args,function(error,tweets,response){
+				if (error){
+					console.log(error);
+					reject(JSON.stringify(error));
+				}
 				
-			case 'searchTweet':
-				var max_pages = args['pages']-1;
-				delete args['pages']; //pages is a made up field that doesn't belong to the original twitter api parameters
+				if (max_pages === 0 || tweets['search_metadata'] === undefined || !('next_results' in tweets['search_metadata'])){
+					//console.log(tweets['search_metadata']);
+					resolve(tweets.statuses);
+				}else{
+					//console.log(tweets['search_metadata']);
+					var result = tweets;			
+					// be careful! asyc iteration!!!
+					//args[pages] is the maximum page you want to iterate over
+					WaterfallOver(max_pages, tweets, function(item,report){
+									
+						var newArgs = querystring.parse(item['search_metadata']['next_results'].slice(1));
+						//console.log(newArgs);
+						
+						client.get('search/tweets',newArgs,function(error,newTweets,response){
+							if(error) reject(error);
+							result['statuses'] = item['statuses'].concat(newTweets['statuses']);
+							item['search_metadata'] = newTweets['search_metadata']; //update the search with next result(page)
+							report(item);
+						});				
+					}, function(){
+						resolve(result.statuses);
+					});
+				}
 				
-				client.get('search/tweets',args,function(error,tweets,response){
-					if (error){
-						console.log(error);
-						reject(JSON.stringify(error));
-					}
-					
-					if (max_pages === 0 || tweets['search_metadata'] === undefined || !('next_results' in tweets['search_metadata'])){
-						//console.log(tweets['search_metadata']);
-						resolve(tweets.statuses);
-					}else{
-						//console.log(tweets['search_metadata']);
-						var result = tweets;			
-						// be careful! asyc iteration!!!
-						//args[pages] is the maximum page you want to iterate over
-						WaterfallOver(max_pages, tweets, function(item,report){
-										
-							var newArgs = querystring.parse(item['search_metadata']['next_results'].slice(1));
-							//console.log(newArgs);
-							
-							client.get('search/tweets',newArgs,function(error,newTweets,response){
-								if(error) reject(error);
-								result['statuses'] = item['statuses'].concat(newTweets['statuses']);
-								item['search_metadata'] = newTweets['search_metadata']; //update the search with next result(page)
-								report(item);
-							});				
-						}, function(){
-							resolve(result.statuses);
-						});
-					}
-					
-				});
-				break;
-		
-		
-			case 'searchGeo':
-				client.get('geo/search',args,function(error,tweets,response){
-					if (error) reject(error);
-					resolve(tweets.result.places);
-				});
-				break;
-				
-				
-			case 'fetchTimeline':
-				
-				args['user_id'] = id;
-				client.get('statuses/user_timeline',args,function(error,tweets,response){
-					if (error) reject(error);
-					//console.log(tweets);
-					resolve(tweets);
-				});
-				break;
-				
-			case 'fetchRetweet':
-				client.get('statuses/retweets/' + id, args, function(error,tweets,response){
-					if (error) reject(error);
-					//console.log(tweets);
-					resolve(tweets);
-				});
-				break;
+			});
+			break;
 	
-			case 'fetchFriend':
-				args['user_id'] = id;
-				client.get('friends/list',args,function(error,tweets,response){
-					if (error) reject(error);
-					//console.log(tweets);
-					resolve(tweets.users);
-				});
-				break;
+	
+		case 'searchGeo':
+			client.get('geo/search',args,function(error,tweets,response){
+				if (error) reject(error);
+				resolve(tweets.result.places);
+			});
+			break;
 			
-			case 'fetchFollower':
-				args['user_id'] = id;
-				client.get('followers/list',args,function(error,tweets,response){
-					if (error) reject(error);
-					//console.log(tweets);
-					resolve(tweets.users);
-				});
-				break;
 			
-			default:
-				console.log('sorry we can\'t find matching resolve type:' + resolveName);
-				resolve(null);
-			}
-		});
+		case 'fetchTimeline':
+			
+			args['user_id'] = id;
+			client.get('statuses/user_timeline',args,function(error,tweets,response){
+				if (error) reject(error);
+				//console.log(tweets);
+				resolve(tweets);
+			});
+			break;
+			
+		case 'fetchRetweet':
+			client.get('statuses/retweets/' + id, args, function(error,tweets,response){
+				if (error) reject(error);
+				//console.log(tweets);
+				resolve(tweets);
+			});
+			break;
+
+		case 'fetchFriend':
+			args['user_id'] = id;
+			client.get('friends/list',args,function(error,tweets,response){
+				if (error) reject(error);
+				//console.log(tweets);
+				resolve(tweets.users);
+			});
+			break;
+		
+		case 'fetchFollower':
+			args['user_id'] = id;
+			client.get('followers/list',args,function(error,tweets,response){
+				if (error) reject(error);
+				//console.log(tweets);
+				resolve(tweets.users);
+			});
+			break;
+		
+		default:
+			console.log('sorry we can\'t find matching resolve type:' + resolveName);
+			resolve(null);
+		}
 	});
 }
 
